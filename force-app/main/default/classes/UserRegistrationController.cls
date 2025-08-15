@@ -1,5 +1,5 @@
 @RestResource(urlMapping='/register')
-global with sharing class UserRegistrationController {
+global without sharing class UserRegistrationController {
     @HttpPost
     global static String doRegister() {
         RestRequest req = RestContext.request;
