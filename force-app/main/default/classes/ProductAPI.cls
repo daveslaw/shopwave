@@ -4,6 +4,8 @@ global without sharing class ProductAPI {
     // Create a new product
     @HttpPost
     global static void createProduct() {
+        validateJWT();
+
         RestRequest req = RestContext.request;
         RestResponse res = RestContext.response;
         try {
@@ -36,7 +38,7 @@ global without sharing class ProductAPI {
 
     // Get a single  / all Products
     @HttpGet
-    global static void getProducts() {
+    global static void getProducts() {        
         RestRequest req = RestContext.request;
         RestResponse res = RestContext.response;
         try {            
@@ -83,6 +85,7 @@ global without sharing class ProductAPI {
     // Update Product
     @HttpPatch
     global static void updateProduct() {
+        validateJWT();
         RestRequest req = RestContext.request;
         RestResponse res = RestContext.response;
         try {
@@ -118,6 +121,7 @@ global without sharing class ProductAPI {
     // Delete Product
     @HttpDelete
     global static void deleteProduct() {
+        validateJWT();
         RestRequest req = RestContext.request;
         RestResponse res = RestContext.response;
         try {
@@ -142,5 +146,56 @@ global without sharing class ProductAPI {
             res.statusCode = 500;
             res.responseBody = Blob.valueOf(JSON.serialize(new Map<String, String>{'error' => 'Server error: ' + e.getMessage()}));
         }
+    }
+
+    private static void validateJWT() {
+        RestRequest req = RestContext.request;
+        String authHeader = req.headers.get('Authorization');
+        if (String.isBlank(authHeader) || !authHeader.startsWith('Bearer ')) {
+            throw new PasswordUtil.CustomException('Missing or invalid Authorization header', 401);
+        }
+
+        String token = authHeader.substring(7);
+        String[] parts = token.split('\\.');
+        if (parts.size() != 3) {
+            throw new PasswordUtil.CustomException('Invalid JWT format', 401);
+        }
+
+        String encodedHeader = parts[0];
+        String encodedPayload = parts[1];
+        String encodedSignature = parts[2];
+
+        String signingData = encodedHeader + '.' + encodedPayload;
+        String secret = [SELECT Secret_Key__c FROM JWT_Settings__mdt WHERE DeveloperName = 'Default' LIMIT 1].Secret_Key__c;
+        Blob expectedSignature = Crypto.generateMac('HmacSHA256', Blob.valueOf(signingData), Blob.valueOf(secret));
+        String expectedEncoded = base64UrlEncode(expectedSignature);
+
+        if (encodedSignature != expectedEncoded) {
+            throw new PasswordUtil.CustomException('Invalid JWT signature', 401);
+        }
+
+        Blob payloadBlob = base64UrlDecode(encodedPayload);
+        Map<String, Object> claims = (Map<String, Object>) JSON.deserializeUntyped(payloadBlob.toString());
+        Long exp = (Long) claims.get('exp');
+        if (exp < (DateTime.now().getTime() / 1000)) {
+            throw new PasswordUtil.CustomException('JWT expired', 401);
+        }
+
+        // Optional: Verify user exists
+        String userId = (String) claims.get('sub');
+        if ([SELECT Count() FROM Users__c WHERE Id = :userId] == 0) {
+            throw new PasswordUtil.CustomException('Invalid user', 401);
+        }
+    }
+
+    private static String base64UrlEncode(Blob input) {
+        return EncodingUtil.base64Encode(input).replaceAll('\\+', '-').replaceAll('/', '_').replaceAll('=+$', '');
+    }
+
+    private static Blob base64UrlDecode(String input) {
+        String padded = input.replaceAll('-', '+').replaceAll('_', '/');
+        Integer mod = Math.mod(padded.length(), 4);
+        if (mod > 0) padded += '===='.substring(0, 4 - mod);
+        return EncodingUtil.base64Decode(padded);
     }
 }
