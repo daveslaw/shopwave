@@ -23,22 +23,7 @@ global with sharing class WeatherAPI {
             String WEATHER_API_ENDPOINT = weatherSettings.Endpoint__c;
             String WEATHER_API_KEY = weatherSettings.API_Key__c;
 
-            // Step 2: Validate JWT (assuming Task 4 implementation)
-            /*String authHeader = req.headers.get('Authorization');
-            if (String.isBlank(authHeader) || !authHeader.startsWith('Bearer ')) {
-                res.statusCode = 401;
-                res.responseBody = Blob.valueOf(JSON.serialize(new ErrorResponse('Unauthorized', 'Missing or invalid JWT token')));
-                return;
-            }*/
-
-            /*String jwtToken = authHeader.substring(7); // Remove 'Bearer ' prefix
-            if (!validateJWT(jwtToken)) {
-                res.statusCode = 401;
-                res.responseBody = Blob.valueOf(JSON.serialize(new ErrorResponse('Unauthorized', 'Invalid JWT token')));
-                return;
-            }*/
-
-            // Step 3: Get city parameter from query string
+            // Step 2: Get city parameter from query string
             String city = req.params.get('city');
             if (String.isBlank(city)) {
                 res.statusCode = 400;
@@ -46,7 +31,7 @@ global with sharing class WeatherAPI {
                 return;
             }
 
-            // Step 4: Make HTTP callout to OpenWeatherMap
+            // Step 3: Make HTTP callout to OpenWeatherMap
             Http http = new Http();
             HttpRequest request = new HttpRequest();
             String endpoint = WEATHER_API_ENDPOINT + '?key=' + WEATHER_API_KEY + '&q=' + city;
@@ -56,7 +41,7 @@ global with sharing class WeatherAPI {
 
             HttpResponse response = http.send(request);
 
-            // Step 5: Handle the response
+            // Step 4: Handle the response
             if (response.getStatusCode() == 200) {
                 // Parse the JSON response
                 Map<String, Object> weatherData = (Map<String, Object>) JSON.deserializeUntyped(response.getBody());               
@@ -89,10 +74,5 @@ global with sharing class WeatherAPI {
         }
     }
 
-    // Placeholder for JWT validation (from Task 4)
-    private static Boolean validateJWT(String jwtToken) {
-        // Implement your JWT validation logic here
-        // Return true if valid, false otherwise
-        return true; // Replace with actual implementation
-    }
+    
 }

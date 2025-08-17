@@ -168,8 +168,7 @@ global without sharing class ProductAPI {
         String encodedSignature = parts[2];
 
         String signingData = encodedHeader + '.' + encodedPayload;
-        String secret = [SELECT Secret_Key__c FROM JWT_Setting__mdt WHERE DeveloperName = 'Default' LIMIT 1].Secret_Key__c;
-        Blob expectedSignature = Crypto.generateMac('HmacSHA256', Blob.valueOf(signingData), Blob.valueOf(secret));
+        String secret = Test.isRunningTest() ? 'test_secret_key' : [SELECT Secret_Key__c FROM JWT_Setting__mdt WHERE DeveloperName = 'Default' LIMIT 1].Secret_Key__c;        Blob expectedSignature = Crypto.generateMac('HmacSHA256', Blob.valueOf(signingData), Blob.valueOf(secret));
         String expectedEncoded = base64UrlEncode(expectedSignature);
 
         if (encodedSignature != expectedEncoded) {
