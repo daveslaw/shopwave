@@ -4,7 +4,7 @@ global without sharing class LoginController {
     @HttpPost
     global static String doLogin() {
         RestRequest req = RestContext.request;
-        String body = req.requestBody.toString();
+        String body = req.requestBody.toString(); 
         Map<String, Object> params = (Map<String, Object>) JSON.deserializeUntyped(body);
         String username = (String) params.get('username');
         String password = (String) params.get('password');

@@ -4,6 +4,9 @@ global without sharing class ProductAPI {
     // Create a new product
     @HttpPost
     global static void createProduct() {
+        
+        system.debug('Create product');
+        
         validateJWT();
 
         RestRequest req = RestContext.request;
@@ -150,12 +153,11 @@ global without sharing class ProductAPI {
 
     private static void validateJWT() {
         RestRequest req = RestContext.request;
-        String authHeader = req.headers.get('Authorization');
-        if (String.isBlank(authHeader) || !authHeader.startsWith('Bearer ')) {
-            throw new PasswordUtility.CustomException('Missing or invalid Authorization header', 401);
+        String token = req.headers.get('X-Auth-Token');
+        if (String.isBlank(token)) {
+            throw new PasswordUtility.CustomException('Missing or invalid X-Auth-Token header', 401);
         }
 
-        String token = authHeader.substring(7);
         String[] parts = token.split('\\.');
         if (parts.size() != 3) {
             throw new PasswordUtility.CustomException('Invalid JWT format', 401);
