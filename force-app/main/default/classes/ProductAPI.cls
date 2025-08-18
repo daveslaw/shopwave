@@ -55,7 +55,6 @@ global without sharing class ProductAPI {
                                             FROM Product__c 
                                             WHERE Id = :productId 
                                             LIMIT 1];
-                system.debug('********* Product List: ' + products);
                 if (products.isEmpty()) {
                     res.statusCode = 404;
                     res.responseBody = Blob.valueOf(JSON.serialize(new Map<String, String>{'error' => 'Product not found'}));
